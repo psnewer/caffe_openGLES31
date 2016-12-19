@@ -23,13 +23,13 @@ if [[ "${USE_OPENBLAS}" -ne 1 ]] || ./scripts/build_openblas.sh ; then
     ./scripts/get_eigen.sh
 fi
 
-./scripts/build_boost.sh
-./scripts/build_gflags.sh
-./scripts/build_glog.sh
-./scripts/build_lmdb.sh
-./scripts/build_opencv.sh
-./scripts/build_protobuf_host.sh
-./scripts/build_protobuf.sh
+#./scripts/build_boost.sh
+#./scripts/build_gflags.sh
+#./scripts/build_glog.sh
+#./scripts/build_lmdb.sh
+#./scripts/build_opencv.sh
+#./scripts/build_protobuf_host.sh
+#./scripts/build_protobuf.sh
 ./scripts/build_caffe.sh
 
 echo "DONE!!"

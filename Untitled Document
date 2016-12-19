@@ -1,0 +1,78 @@
+        if(strcmp(this->layer_param_.name().c_str(),"Dense1")==0){
+////             YXLog("mylog6 shader forward layer %s",this->layer_param_.name().c_str());
+             glBindBuffer(GL_SHADER_STORAGE_BUFFER,bottom[0]->shader_handle());
+             glBufferData(GL_SHADER_STORAGE_BUFFER,K_*sizeof(Dtype),bottom_data,GL_DYNAMIC_DRAW);
+             glBindBuffer(GL_SHADER_STORAGE_BUFFER,top[0]->shader_handle());
+             GLint bufMask = GL_MAP_READ_BIT;
+             Dtype* points_ = (Dtype*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER,0,M_*N_*sizeof(Dtype),bufMask);
+             memset(points_,0,M_*N_*sizeof(Dtype));
+//             YXLog("mylog6 %.4f %.4f %.4f",points_[0],points_[1],points_[2]);
+             glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+             this->forward_shader_gemm(bottom[0]->shader_handle(),this->blobs_[0]->shader_handle(),top[0]->shader_handle(), tmpStorage);
+             glBindBuffer(GL_SHADER_STORAGE_BUFFER,top[0]->shader_handle());
+             Dtype* points = (Dtype*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER,0,M_*N_*sizeof(Dtype),bufMask);
+             memcpy(top_data,points,M_*N_*sizeof(Dtype));
+//             YXLog("mylog6 %.4f %.4f %.4f",points[0],points[100],points[127]);
+             glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+       }
+
+
+    if(strcmp(this->layer_param_.name().c_str(),"Pool1")==0){
+             glBindBuffer(GL_SHADER_STORAGE_BUFFER,bottom[0]->shader_handle());
+             glBufferData(GL_SHADER_STORAGE_BUFFER,bottom_count*sizeof(Dtype),bottom_data,GL_DYNAMIC_DRAW);
+ clock_t t_start = clock();
+  forward_pool(bottom[0]->shader_handle(),top[0]->shader_handle());
+  clock_t t_end = clock();
+  YXLog("mylog5 %.4f",1000.0 * (t_end - t_start) / CLOCKS_PER_SEC);
+             glBindBuffer(GL_SHADER_STORAGE_BUFFER,top[0]->shader_handle());
+             GLint bufMask = GL_MAP_READ_BIT;
+             Dtype* points = (Dtype*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER,0,top_count*sizeof(Dtype),bufMask);
+             memcpy(top_data,points,top_count*sizeof(Dtype));
+             YXLog("mylog6 %.4f %.4f %.4f %.4f",points[18],points[19],points[20],points[21]);
+             glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+        "uniform int conv_in_channels;\
+         uniform int in_width;\
+         uniform int in_height;\
+         uniform int kernel_width;\
+         uniform int kernel_height;\
+         uniform int padding;\
+         uniform int stride;\
+         layout(std430,binding=1) buffer input_\
+           {\
+             float bottom[];\
+           };\
+         layout(std430,binding=2) buffer weights_\
+           {\
+             float weights[];\
+           };\
+         layout(std430,binding=3) buffer output_\
+           {\
+             float top[];\
+           };\
+         layout(std430,binding=20) buffer tmp_\
+           {\
+             float tmp[];\
+           };\
+         layout (local_size_x = 5, local_size_y = 5, local_size_z = 3) in;\
+         void main() {\
+             	int x = int(gl_WorkGroupID.x)*int(stride) - int(padding);\
+                int y = int(gl_WorkGroupID.y)*int(stride) - int(padding);\
+                int current_x = x + int(gl_LocalInvocationID.x);\
+		int current_y = y + int(gl_LocalInvocationID.y);\
+if( current_x>=0&&current_x<in_width&&current_y>=0&&current_y<in_height)\
+			 {\
+                tmp[(gl_WorkGroupID.z*gl_NumWorkGroups.y*gl_NumWorkGroups.x+gl_WorkGroupID.y*gl_NumWorkGroups.x+gl_WorkGroupID.x)*gl_WorkGroupSize.x*gl_WorkGroupSize.y*gl_WorkGroupSize.z+gl_LocalInvocationIndex]=bottom[in_width*in_height*int(gl_LocalInvocationID.z) + current_y*in_width + current_x] * weights[int(gl_WorkGroupID.z)*kernel_width*kernel_height*conv_in_channels + int(gl_LocalInvocationID.z)*kernel_width*kernel_height + int(gl_LocalInvocationID.y)*kernel_width + int(gl_LocalInvocationID.x)];\
+}\
+else\
+{\
+tmp[(gl_WorkGroupID.z*gl_NumWorkGroups.y*gl_NumWorkGroups.x+gl_WorkGroupID.y*gl_NumWorkGroups.x+gl_WorkGroupID.x)*gl_WorkGroupSize.x*gl_WorkGroupSize.y*gl_WorkGroupSize.z+gl_LocalInvocationIndex]=0.0;\
+}\
+                groupMemoryBarrier();\
+                if(int(gl_LocalInvocationIndex)==0)\
+{\
+top[gl_WorkGroupID.z*gl_NumWorkGroups.y*gl_NumWorkGroups.x+gl_WorkGroupID.y*gl_NumWorkGroups.x+gl_WorkGroupID.x]=0.0;\
+                for(int i=0;i<75;i++)\
+	        top[gl_WorkGroupID.z*gl_NumWorkGroups.y*gl_NumWorkGroups.x+gl_WorkGroupID.y*gl_NumWorkGroups.x+gl_WorkGroupID.x] += tmp[(gl_WorkGroupID.z*gl_NumWorkGroups.y*gl_NumWorkGroups.x+gl_WorkGroupID.y*gl_NumWorkGroups.x+gl_WorkGroupID.x)*gl_WorkGroupSize.x*gl_WorkGroupSize.y*gl_WorkGroupSize.z+uint(i)];\
+}\
+         }"
