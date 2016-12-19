@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 *.tar.bz2
 *.tar.gz
 
@@ -5,3 +6,34 @@ android_lib/*
 download/*
 gflags-2.1.2/
 boost/boost_?_??_0/
+=======
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+>>>>>>> 16c32a6691e045b373d6668ba787b2101e4978a9
